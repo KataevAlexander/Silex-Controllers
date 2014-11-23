@@ -1,0 +1,22 @@
+{
+  "require": {
+    "silex/silex": "v1.1.2",
+    "symfony/yaml": "v2.4.2",
+    "symfony/config": "v2.4.2",
+    "symfony/filesystem": "v2.4.2",
+    "symfony/finder": "v2.4.2",
+    "symfony/form": "v2.4.2",
+    "symfony/locale": "v2.4.2",
+    "symfony/process": "v2.4.2",
+    "symfony/security": "v2.4.2",
+    "symfony/serializer": "v2.4.2",
+    "symfony/translation": "v2.4.2",
+    "symfony/twig-bridge": "v2.4.2",
+    "symfony/browser-kit": "v2.4.2",
+    "monolog/monolog": "1.7.0",
+    "twig/twig": "v1.15.1",
+    "doctrine/dbal": "v2.4.2"
+  },
+
+  "minimum-stability": "stable"
+}

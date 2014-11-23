@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="site" default="deploy" basedir=".">
+    <property name="DR" value="./.." override="true"/>
+    <property name="application" value="${DR}/application/"/>
+    <property name="build" value="${DR}/build" override="true"/>
+    <property name="build-target" value="${build}/target" override="true"/>
+    <property name="data" value="${DR}/data/" override="true"/>
+    <property name="public" value="${DR}/public/" override="true"/>
+    <property name="static" value="${DR}/static/" override="true"/>
+    <property name="vendor" value="${DR}/vendor/" override="true"/>
+
+    <target name="deploy" depends="check-php, sync-files, compile-less, minify, make-config, make-chmode">
+        <filesync sourcedir="${build-target}/" destinationdir="${target}" verbose="true" itemizechanges="true" checksum="true" delete="true"/>
+    </target>
+
+    <target name="check-php" if="check-php">
+        <if>
+            <equals arg1="${check-php}" arg2="true"/>
+            <then>
+                <phplint haltonfailure="true" deprecatedAsError="true" level="warning">
+                    <fileset dir="${application}">
+                        <include name="**/*.php"/>
+                    </fileset>
+                </phplint>
+            </then>
+        </if>
+    </target>
+
+    <target name="sync-files">
+        <if>
+            <equals arg1="${sync-files-clear}" arg2="true"/>
+            <then>
+                <property name="sync-files-clear" value="true"/>
+            </then>
+            <else>
+                <property name="sync-files-clear" value="false"/>
+            </else>
+        </if>
+
+        <mkdir dir="${build-target}/"/>
+        <filesync sourcedir="${public}" destinationdir="${build-target}" verbose="true" itemizechanges="true" checksum="true" delete="${sync-files-clear}"/>
+
+        <mkdir dir="${build-target}/application"/>
+        <filesync sourcedir="${application}" destinationdir="${build-target}/application" verbose="true" itemizechanges="true" checksum="true" delete="true"/>
+
+        <mkdir dir="${build-target}/data"/>
+        <filesync sourcedir="${data}" destinationdir="${build-target}/data" verbose="true" itemizechanges="true" checksum="true" delete="true"/>
+
+        <mkdir dir="${build-target}/static"/>
+        <filesync sourcedir="${static}" destinationdir="${build-target}/static" verbose="true" itemizechanges="true" checksum="true" delete="true"/>
+
+        <if>
+            <equals arg1="${sync-files-clear}" arg2="true"/>
+            <then>
+                <mkdir dir="${build-target}/vendor"/>
+                <filesync sourcedir="${vendor}" destinationdir="${build-target}/vendor" verbose="true" itemizechanges="true" checksum="true" delete="true"/>
+            </then>
+        </if>
+    </target>
+
+    <target name="make-config">
+        <property name="make-config-path" value="${build-target}/data/config"/>
+
+        <copy file="${make-config-path}/${make-config}.yml" tofile="${make-config-path}/config.yml" overwrite="true" haltonerror="true"/>
+
+        <delete file="${make-config-path}/develop.yml" failonerror="true"/>
+    </target>
+
+    <target name="make-chmode">
+        <chmod file="${build-target}/data/cache/twig" mode="0777" verbose="true"/>
+        <chmod file="${build-target}/data/cache/http" mode="0777" verbose="true"/>
+
+        <chmod file="${build-target}/data/log/monolog.log" mode="0776" verbose="true"/>
+    </target>
+
+    <target name="compile-less">
+        <if>
+            <equals arg1="${compile-less}" arg2="true"/>
+            <then>
+                <foreach param="param" absparam="path" target="shell-less">
+                    <fileset dir="${build-target}/static/css/" includes="**/*.less"/>
+                </foreach>
+
+                <move todir="${build-target}/static/css/" overwrite="true">
+                    <mapper type="glob" from="*.less-compiled" to="*.css"/>
+                    <fileset dir="${build-target}/static/css/" includes="**/*.less-compiled"/>
+                </move>
+
+                <delete>
+                    <fileset dir="${build-target}/static/css/" includes="**/*.less"/>
+                </delete>
+            </then>
+        </if>
+    </target>
+
+    <target name="shell-less">
+        <exec command="lessc -x ${path} > ${path}-compiled" escape="false" checkreturn="true" logoutput="true"/>
+    </target>
+
+    <target name="minify" depends="minify-css, minify-js, minify-html">
+
+    </target>
+
+    <target name="minify-css">
+        <if>
+            <equals arg1="${minify-css}" arg2="true"/>
+            <then>
+                <foreach param="param" absparam="path" target="shell-yui">
+                    <fileset dir="${build-target}/static/css/" includes="**/*.css"/>
+                </foreach>
+            </then>
+        </if>
+    </target>
+
+    <target name="shell-yui">
+        <exec command="java -jar jar/yuicompressor-2.4.8.jar ${path} -o ${path}"/>
+    </target>
+
+    <target name="minify-js">
+        <if>
+            <equals arg1="${minify-js}" arg2="true"/>
+            <then>
+                <foreach param="param" absparam="path" target="shell-yui">
+                    <fileset dir="${build-target}/static/js/" includes="**/*.js"/>
+                </foreach>
+            </then>
+        </if>
+    </target>
+
+    <target name="minify-html">
+        <if>
+            <equals arg1="${minify-html}" arg2="true"/>
+            <then>
+                <foreach param="param" absparam="path" target="shell-html">
+                    <fileset dir="${build-target}/application/views/" includes="**/*.twig"/>
+                </foreach>
+            </then>
+        </if>
+    </target>
+
+    <target name="shell-html">
+        <exec command="java -jar jar/htmlcompressor-1.5.3.jar --compress-js --remove-script-attr ${path} -o ${path}"/>
+    </target>
+</project>
